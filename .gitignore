@@ -1,0 +1,26 @@
+# Python caching and virtual environments
+venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large data and media files
+*.mp4
+data/uploads/
+data/events*.jsonl
+output_entry
+output_test
+ps_text.txt
+sample.json
+sample_events*.jsonl
+POS - sample transactions*.csv
+
+# Databases
+*.db
+store_intelligence.db
+
+# OS-specific files
+.DS_Store
+Thumbs.db

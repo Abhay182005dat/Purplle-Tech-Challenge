@@ -1,0 +1,37 @@
+{
+  "store_id": "ST1008",
+  "categories": [
+    {
+      "category": "SKINCARE",
+      "zone_ids": ["EB_KOREAN", "THE_FACE_SHOP", "GOOD_VIBES", "DERMDOC", "MINIMALIST", "AQUALOGICA", "LAKME_SKIN"]
+    },
+    {
+      "category": "MAKEUP",
+      "zone_ids": ["MAYBELLINE", "FACES_CANADA", "LAKME", "COLORBAR_SUGAR", "SWISS_BEAUTY", "RENEE_NY_BAE", "MAKEUP_UNIT"]
+    },
+    {
+      "category": "FRAGRANCE",
+      "zone_ids": ["FRAGRANCE"]
+    },
+    {
+      "category": "HAIR_CARE",
+      "zone_ids": ["ALPS_GOODNESS", "STREAX"]
+    },
+    {
+      "category": "ACCESSORIES",
+      "zone_ids": ["ACCESSORIES", "NAIL_UNIT"]
+    },
+    {
+      "category": "SERVICE",
+      "zone_ids": ["PMU"]
+    },
+    {
+      "category": "BILLING",
+      "zone_ids": ["BILLING"]
+    },
+    {
+      "category": "COMMON",
+      "zone_ids": ["FOH", "ENTRY_ZONE"]
+    }
+  ]
+}

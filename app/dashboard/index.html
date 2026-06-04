@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Intelligence Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#0f1117;--bg2:#1e2130;--bg3:#252840;
+            --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+            --border:rgba(255,255,255,0.06);--border-hover:rgba(124,58,237,0.3);
+            --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.15);
+            --green:#22c55e;--green-bg:rgba(34,197,94,0.15);
+            --red:#ef4444;--red-bg:rgba(239,68,68,0.15);
+            --amber:#f59e0b;--amber-bg:rgba(245,158,11,0.15);
+            --accent:#7c3aed;--accent-glow:rgba(124,58,237,0.25);
+            --accent-light:#a78bfa;
+            --radius:12px;
+        }
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{max-width:1000px;margin:0 auto;padding:32px 24px}
+        
+        /* Top bar */
+        .topbar{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:28px}
+        .topbar h1{font-size:20px;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(135deg,var(--text),var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:flex;align-items:center;gap:8px}
+        .topbar h1 span{font-size:24px;-webkit-text-fill-color:initial}
+        .live-pill{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:0.05em}
+        .live-pill.on{background:var(--green-bg);color:var(--green)}
+        .live-pill.off{background:var(--red-bg);color:var(--red)}
+        .live-pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+        select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;color:var(--text);cursor:pointer;transition:all 0.2s}
+        select:hover,select:focus{border-color:var(--accent);outline:none}
+        .topbar-right{display:flex;align-items:center;gap:16px}
+
+        /* Section */
+        .section{margin-bottom:32px}
+        .section-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.08em}
+
+        /* Drop zone */
+        .dropzone{border:2px dashed var(--border);border-radius:var(--radius);padding:40px 24px;text-align:center;cursor:pointer;background:var(--bg2);transition:all .2s ease}
+        .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:var(--bg3);box-shadow:0 0 20px var(--accent-glow)}
+        .dropzone p{color:var(--text2);font-size:14px;margin-top:8px}
+        .dropzone .icon{font-size:32px;filter:drop-shadow(0 0 10px rgba(124,58,237,0.2))}
+        .dropzone .filename{font-size:13px;color:var(--accent-light);font-weight:500;margin-top:8px}
+        
+        /* Config form */
+        .config-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+        .field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+        .field input,.field select{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;color:var(--text);background:var(--bg2);transition:all 0.2s}
+        .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+        
+        /* Button */
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border:none;border-radius:8px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+        .btn-primary{background:linear-gradient(135deg,var(--accent),#a855f7);color:#fff;margin-top:16px;box-shadow:0 4px 12px var(--accent-glow)}
+        .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+        .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+        
+        /* Progress */
+        .progress-bar{height:6px;background:var(--bg3);border-radius:3px;margin-top:16px;overflow:hidden;display:none}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:3px;transition:width .4s ease;width:0}
+        .status-text{font-size:12px;color:var(--text2);margin-top:10px;display:none;font-weight:500}
+        
+        /* Metric cards */
+        .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;transition:all 0.2s}
+        .metric-card:hover{transform:translateY(-2px);border-color:var(--border-hover);box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+        .metric-card .val{font-size:36px;font-weight:800;line-height:1.1;letter-spacing:-0.02em}
+        .metric-card .lbl{font-size:11px;color:var(--text2);margin-top:6px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+        .val-green{color:var(--green)}.val-amber{color:var(--amber)}.val-red{color:var(--red)}
+
+        /* Heatmap */
+        .heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+        .zone-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:all 0.2s}
+        .zone-card:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+        .zone-card .zname{font-size:14px;font-weight:600;margin-bottom:10px}
+        .zone-card .zstat{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px}
+        .zone-card .zstat span:last-child{font-weight:600;color:var(--text)}
+        .zone-bar{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:10px;overflow:hidden}
+        .zone-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:2px;transition:width .5s}
+
+        /* Funnel */
+        .funnel-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:28px}
+        .funnel-stages{display:flex;align-items:flex-end;gap:4px;height:180px;padding-bottom:50px;position:relative}
+        .funnel-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative}
+        .funnel-bar{width:100%;border-radius:6px 6px 2px 2px;min-height:6px;transition:all .5s}
+        .funnel-count{font-size:20px;font-weight:800;margin-bottom:6px}
+        .funnel-label{position:absolute;bottom:-42px;text-align:center;width:100%}
+        .funnel-label .fname{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+        .funnel-label .fdrop{font-size:11px;color:var(--red);font-weight:700;margin-top:2px}
+        .funnel-rate{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+        .funnel-rate .rv{font-size:28px;font-weight:800;color:var(--accent-light)}
+        .funnel-rate .rl{font-size:12px;color:var(--text2);margin-top:4px}
+
+        /* Anomalies */
+        .anomaly-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:12px;border-left:4px solid var(--text3);transition:all 0.2s}
+        .anomaly-card:hover{background:var(--bg3)}
+        .anomaly-card.sev-INFO{border-left-color:var(--blue)}.anomaly-card.sev-WARN{border-left-color:var(--amber)}.anomaly-card.sev-CRITICAL{border-left-color:var(--red)}
+        .anomaly-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .anomaly-type{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+        .sev-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em}
+        .sev-badge.INFO{background:var(--blue-bg);color:var(--blue)}.sev-badge.WARN{background:var(--amber-bg);color:var(--amber)}.sev-badge.CRITICAL{background:var(--red-bg);color:var(--red)}
+        .anomaly-desc{font-size:13px;color:var(--text2);margin-bottom:6px;line-height:1.4}
+        .anomaly-action{font-size:12px;color:var(--accent-light);font-weight:600}
+        .no-anomalies{background:var(--green-bg);border-radius:var(--radius);padding:24px;text-align:center;color:var(--green);font-size:14px;font-weight:600}
+
+        /* Results panel */
+        .results-panel{margin-top:20px;display:none}
+        .results-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+        .result-chip{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+        .result-chip .rv{font-size:22px;font-weight:800}.result-chip .rl{font-size:10px;color:var(--text2);text-transform:uppercase;margin-top:2px}
+        .events-pre{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;max-height:300px;overflow:auto;font-size:11px;font-family:'SF Mono',Monaco,Consolas,monospace;line-height:1.5;color:var(--text);white-space:pre-wrap;word-break:break-all}
+        details summary{font-size:13px;font-weight:600;color:var(--accent-light);cursor:pointer;margin-bottom:10px;user-select:none}
+
+        /* Footer */
+        .footer{text-align:center;padding:24px 0;border-top:1px solid var(--border);margin-top:20px;font-size:12px;color:var(--text3)}
+
+        /* Responsive */
+        @media(max-width:768px){.metrics-grid,.config-grid,.results-summary{grid-template-columns:1fr 1fr}.heatmap-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:480px){.metrics-grid,.config-grid,.results-summary{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header class="topbar">
+        <h1><span>📊</span> Store Intelligence</h1>
+        <div class="topbar-right">
+            <select id="store-select">
+                <option value="ST1008">ST1008</option>
+                <option value="Store 1">Store 1</option>
+            </select>
+            <div class="live-pill off" id="live-pill">
+                <div class="dot"></div><span id="live-text">CONNECTING</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Pipeline Runner -->
+    <section class="section" id="pipeline-section">
+        <div class="section-title">Run Video Pipeline</div>
+        <div class="dropzone" id="dropzone">
+            <div class="icon">📁</div>
+            <p>Drop a <strong>.mp4</strong> video file here, or click to browse</p>
+            <div class="filename" id="file-label"></div>
+        </div>
+        <input type="file" id="file-input" accept="video/mp4,.mp4" style="display:none">
+        <div class="config-grid">
+            <div class="field"><label>Store ID</label><select id="cfg-store"><option value="ST1008">ST1008</option><option value="Store 1">Store 1</option></select></div>
+            <div class="field"><label>FPS</label><input type="number" id="cfg-fps" value="15" min="1" max="60"></div>
+            <div class="field"><label>Confidence</label><input type="number" id="cfg-conf" value="0.3" min="0.1" max="1" step="0.05"></div>
+            <div class="field"><label>Start Time</label><input type="datetime-local" id="cfg-time"></div>
+        </div>
+        <button class="btn btn-primary" id="run-btn" disabled>▶ Run Pipeline</button>
+        <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="status-text" id="status-text"></div>
+
+        <!-- Results -->
+        <div class="results-panel" id="results-panel">
+            <div class="section-title">Results</div>
+            <div class="results-summary" id="results-summary"></div>
+            <details>
+                <summary>View Events JSON (first 50)</summary>
+                <pre class="events-pre" id="events-json"></pre>
+            </details>
+        </div>
+    </section>
+
+    <!-- Metrics -->
+    <section class="section">
+        <div class="section-title">Store Metrics</div>
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="val" id="v-visitors">—</div><div class="lbl">Unique Visitors</div></div>
+            <div class="metric-card"><div class="val" id="v-conversion">—</div><div class="lbl">Conversion Rate</div></div>
+            <div class="metric-card"><div class="val" id="v-queue">—</div><div class="lbl">Queue Depth</div></div>
+            <div class="metric-card"><div class="val" id="v-abandon">—</div><div class="lbl">Queue Abandonment</div></div>
+        </div>
+    </section>
+
+    <!-- Heatmap -->
+    <section class="section">
+        <div class="section-title">Zone Activity Heatmap <span id="heatmap-badge" style="font-size:11px;font-weight:500;color:var(--text3);margin-left:8px"></span></div>
+        <div class="heatmap-grid" id="heatmap-grid"><div class="zone-card"><div class="zname" style="color:var(--text3)">Loading zones...</div></div></div>
+    </section>
+
+    <!-- Funnel -->
+    <section class="section">
+        <div class="section-title">Conversion Funnel</div>
+        <div class="funnel-wrap">
+            <div class="funnel-stages" id="funnel-stages"></div>
+            <div class="funnel-rate"><div class="rv" id="funnel-rate">—%</div><div class="rl">Overall Conversion</div></div>
+        </div>
+    </section>
+
+    <!-- Anomalies -->
+    <section class="section">
+        <div class="section-title">Active Anomalies <span id="anomaly-count" style="font-size:11px;color:var(--text3);margin-left:8px">0</span></div>
+        <div id="anomalies-list"><div class="no-anomalies">✓ No active anomalies</div></div>
+    </section>
+
+    <footer class="footer">Last updated: <span id="last-updated">—</span></footer>
+</div>
+
+<script>
+// ── State ──
+let eventSource=null,heatmapIv=null,funnelIv=null,selectedFile=null,currentRunId=null,pollIv=null;
+
+// ── Drag & Drop ──
+const dz=document.getElementById('dropzone'),fi=document.getElementById('file-input'),fl=document.getElementById('file-label'),rb=document.getElementById('run-btn');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files.length){handleFile(e.dataTransfer.files[0])}});
+fi.addEventListener('change',()=>{if(fi.files.length)handleFile(fi.files[0])});
+function handleFile(f){if(!f.name.endsWith('.mp4')){alert('Please select an .mp4 file');return}selectedFile=f;fl.textContent='📎 '+f.name+' ('+Math.round(f.size/1024/1024)+'MB)';rb.disabled=false}
+
+// ── Run Pipeline ──
+rb.addEventListener('click',async()=>{
+    if(!selectedFile)return;
+    rb.disabled=true;rb.textContent='⏳ Uploading...';
+    const fd=new FormData();
+    fd.append('video',selectedFile);
+    fd.append('store_id',document.getElementById('cfg-store').value);
+    fd.append('fps',document.getElementById('cfg-fps').value);
+    fd.append('confidence_threshold',document.getElementById('cfg-conf').value);
+    const t=document.getElementById('cfg-time').value;
+    if(t)fd.append('clip_start_time',new Date(t).toISOString());
+    try{
+        const r=await fetch('/pipeline/run',{method:'POST',body:fd});
+        const d=await r.json();
+        currentRunId=d.run_id;
+        rb.textContent='⏳ Processing...';
+        document.getElementById('progress-bar').style.display='block';
+        document.getElementById('status-text').style.display='block';
+        document.getElementById('status-text').textContent='Pipeline queued...';
+        pollIv=setInterval(pollStatus,2000);
+    }catch(e){rb.textContent='▶ Run Pipeline';rb.disabled=false;alert('Upload failed: '+e)}
+});
+
+async function pollStatus(){
+    if(!currentRunId)return;
+    try{
+        const r=await fetch('/pipeline/status/'+currentRunId);
+        const d=await r.json();
+        document.getElementById('progress-fill').style.width=d.progress_pct+'%';
+        document.getElementById('status-text').textContent=
+            d.status.toUpperCase()+' — '+d.detection_count+' detections, '+d.event_count+' events'+(d.elapsed_seconds?' ('+d.elapsed_seconds+'s)':'');
+        if(d.status==='completed'||d.status==='failed'){
+            clearInterval(pollIv);
+            rb.textContent='▶ Run Pipeline';rb.disabled=false;
+            if(d.status==='completed'){showResults(d);fetchHeatmap(document.getElementById('store-select').value);fetchFunnel(document.getElementById('store-select').value)}
+            else{document.getElementById('status-text').textContent='FAILED: '+d.error}
+        }
+    }catch(e){console.error(e)}
+}
+
+async function showResults(d){
+    const rp=document.getElementById('results-panel');rp.style.display='block';
+    const rs=document.getElementById('results-summary');
+    rs.innerHTML=`
+        <div class="result-chip"><div class="rv">${d.event_count}</div><div class="rl">Events</div></div>
+        <div class="result-chip"><div class="rv">${d.track_count}</div><div class="rl">Tracks</div></div>
+        <div class="result-chip"><div class="rv">${d.staff_count}</div><div class="rl">Staff</div></div>
+        <div class="result-chip"><div class="rv">${d.elapsed_seconds}s</div><div class="rl">Time</div></div>`;
+    // Add event type breakdown
+    const types=d.event_type_summary||{};
+    let typesHtml='<div style="margin-top:8px;font-size:12px;color:var(--text2)">'+Object.entries(types).map(([k,v])=>`<span style="margin-right:12px"><strong>${v}</strong> ${k}</span>`).join('')+'</div>';
+    rs.insertAdjacentHTML('afterend',typesHtml);
+    // Fetch full results
+    try{
+        const r=await fetch('/pipeline/results/'+currentRunId);
+        const data=await r.json();
+        document.getElementById('events-json').textContent=JSON.stringify(data.events,null,2);
+    }catch(e){}
+}
+
+// ── SSE ──
+function connectSSE(id){
+    if(eventSource)eventSource.close();
+    setLive(false,'CONNECTING');
+    eventSource=new EventSource('/stores/'+id+'/stream');
+    eventSource.onopen=()=>setLive(true);
+    eventSource.onmessage=e=>{try{const d=JSON.parse(e.data);if(!d.error){updateMetrics(d.metrics);updateAnomalies(d.anomalies);updateTime()}setLive(true)}catch(x){}};
+    eventSource.onerror=()=>{setLive(false,'DISCONNECTED');eventSource.close();setTimeout(()=>connectSSE(id),5000)};
+}
+function setLive(on,txt){
+    const p=document.getElementById('live-pill'),t=document.getElementById('live-text');
+    p.className='live-pill '+(on?'on':'off');t.textContent=on?'LIVE':(txt||'OFF');
+}
+
+// ── Metrics ──
+function updateMetrics(m){
+    if(!m)return;
+    anim('v-visitors',m.unique_visitors||0);
+    const r=m.conversion_rate||0;const el=document.getElementById('v-conversion');
+    anim('v-conversion',r.toFixed(1)+'%');el.className='val'+(r>30?' val-green':r>=10?' val-amber':' val-red');
+    const q=m.current_queue_depth||0;const qe=document.getElementById('v-queue');
+    anim('v-queue',q);qe.className='val'+(q<=3?' val-green':q<=6?' val-amber':' val-red');
+    anim('v-abandon',(m.abandonment_rate||0).toFixed(1)+'%');
+}
+function anim(id,v){const e=document.getElementById(id);if(e&&e.textContent!==String(v))e.textContent=v}
+
+// ── Heatmap ──
+function fetchHeatmap(id){fetch('/stores/'+id+'/heatmap').then(r=>r.json()).then(updateHeatmap).catch(()=>{})}
+function updateHeatmap(d){
+    if(!d)return;
+    const b=document.getElementById('heatmap-badge');
+    b.textContent=d.data_confidence?d.session_count+' sessions':'Low confidence ('+d.session_count+')';
+    const g=document.getElementById('heatmap-grid');
+    if(!d.zones||!d.zones.length){g.innerHTML='<div class="zone-card"><div class="zname" style="color:var(--text3)">No data</div></div>';return}
+    g.innerHTML='';
+    d.zones.forEach(z=>{
+        const f=z.visit_frequency||0;
+        const r=Math.round(30+(124-30)*f/100),gr=Math.round(33+(58-33)*f/100),bl=Math.round(48+(237-48)*f/100);
+        const c=document.createElement('div');c.className='zone-card';c.style.background=`rgb(${r},${gr},${bl})`;
+        c.innerHTML=`<div class="zname">${z.zone_name}</div><div class="zstat"><span>Visits</span><span>${z.visit_frequency}</span></div><div class="zstat"><span>Dwell</span><span>${z.avg_dwell_seconds.toFixed(1)}s</span></div><div class="zone-bar"><div class="zone-bar-fill" style="width:${z.normalised_dwell}%"></div></div>`;
+        g.appendChild(c);
+    });
+}
+
+// ── Funnel ──
+function fetchFunnel(id){fetch('/stores/'+id+'/funnel').then(r=>r.json()).then(updateFunnel).catch(()=>{})}
+function updateFunnel(d){
+    if(!d||!d.stages)return;
+    const c=document.getElementById('funnel-stages');c.innerHTML='';
+    const mx=Math.max(...d.stages.map(s=>s.count),1);
+    const ops=[1,.75,.55,.4];
+    d.stages.forEach((s,i)=>{
+        const h=Math.max((s.count/mx)*100,4);
+        const el=document.createElement('div');el.className='funnel-stage';
+        el.innerHTML=`<div class="funnel-count">${s.count}</div><div class="funnel-bar" style="height:${h}%;background:rgba(124,58,237,${ops[i]||.4})"></div><div class="funnel-label"><div class="fname">${s.stage.replace('_',' ')}</div>${s.drop_off_pct>0?'<div class="fdrop">↓ '+s.drop_off_pct.toFixed(1)+'%</div>':''}</div>`;
+        c.appendChild(el);
+    });
+    document.getElementById('funnel-rate').textContent=(d.conversion_rate||0).toFixed(1)+'%';
+}
+
+// ── Anomalies ──
+function updateAnomalies(d){
+    if(!d)return;
+    const a=d.anomalies||[];const c=document.getElementById('anomalies-list');
+    document.getElementById('anomaly-count').textContent=a.length;
+    if(!a.length){c.innerHTML='<div class="no-anomalies">✓ No active anomalies</div>';return}
+    c.innerHTML='';
+    a.forEach(x=>{
+        const el=document.createElement('div');el.className='anomaly-card sev-'+x.severity;
+        el.innerHTML=`<div class="anomaly-head"><div class="anomaly-type"><span class="sev-badge ${x.severity}">${x.severity}</span>${x.type.replace(/_/g,' ')}</div></div><div class="anomaly-desc">${x.description}</div><div class="anomaly-action">→ ${x.suggested_action}</div>`;
+        c.appendChild(el);
+    });
+}
+
+function updateTime(){document.getElementById('last-updated').textContent=new Date().toLocaleTimeString('en-US',{hour12:false})}
+
+// ── Init ──
+function init(){
+    const sel=document.getElementById('store-select');
+    // Load stores from API
+    fetch('/stores/list').then(r=>r.json()).then(d=>{
+        if(d.stores&&d.stores.length){
+            sel.innerHTML='';
+            const cfgStore=document.getElementById('cfg-store');cfgStore.innerHTML='';
+            d.stores.forEach(s=>{
+                sel.innerHTML+=`<option value="${s.store_id}">${s.store_id}</option>`;
+                cfgStore.innerHTML+=`<option value="${s.store_id}">${s.store_id}</option>`;
+            });
+        }
+        connectSSE(sel.value);fetchHeatmap(sel.value);fetchFunnel(sel.value);
+    }).catch(()=>{connectSSE(sel.value);fetchHeatmap(sel.value);fetchFunnel(sel.value)});
+    heatmapIv=setInterval(()=>fetchHeatmap(sel.value),30000);
+    funnelIv=setInterval(()=>fetchFunnel(sel.value),30000);
+    sel.addEventListener('change',()=>{
+        connectSSE(sel.value);fetchHeatmap(sel.value);fetchFunnel(sel.value);
+        clearInterval(heatmapIv);clearInterval(funnelIv);
+        heatmapIv=setInterval(()=>fetchHeatmap(sel.value),30000);
+        funnelIv=setInterval(()=>fetchFunnel(sel.value),30000);
+    });
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
